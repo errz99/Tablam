@@ -48,10 +48,10 @@ func newEbox(title string, align MyAlign, width int, inUse bool) Ebox {
 	return Ebox{title, titlex, ebox, label, inUse}
 }
 
-func (e *Ebox) Update(title string, width int, inUse bool) {
+func (e *Ebox) Update(title string, width int, align MyAlign, inUse bool) {
 	e.title = title
 	grow := width - utf8.RuneCountInString(e.title)
-	e.titlex = generateX(e.title, e.align, grow)
+	e.titlex = generateX(e.title, align, grow)
 	e.label.SetMarkup(dataMarkup[0] + e.titlex + dataMarkup[1])
 	e.inUse = inUse
 }
@@ -82,25 +82,25 @@ func generateX(elem string, align MyAlign, grow int) string {
 }
 
 type EColumn struct {
-	eboxes []Ebox
-	align  MyAlign
-	width  int
+	Eboxes []Ebox
+	Align  MyAlign
+	Width  int
 }
 
-func NewEColumn(titles []string, align MyAlign) EColumn {
-	var width int
+func NewEColumn(titles []string, Align MyAlign) EColumn {
+	var Width int
 	for _, title := range titles {
-		if utf8.RuneCountInString(title) > width {
-			title = utf8.RuneCountInString(title)
+		if utf8.RuneCountInString(title) > Width {
+			Width = utf8.RuneCountInString(title)
 		}
 	}
 
-	var eboxes []Ebox
+	var Eboxes []Ebox
 	for _, title := range titles {
-		eboxes = append(eboxes, newEbox(title, align, width, true))
+		Eboxes = append(Eboxes, newEbox(title, Align, Width, true))
 	}
 
-	return EColumn{eboxes, align, width}
+	return EColumn{Eboxes, Align, Width}
 }
 
 func Hello(name string) {
