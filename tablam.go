@@ -23,9 +23,9 @@ var leftRightMargin = 1
 type MyAlign uint8
 
 const (
-	alignLeft MyAlign = iota + 1
-	alignCenter
-	alignRight
+	AlignLeft MyAlign = iota + 1
+	AlignCenter
+	AlignRight
 )
 
 type Ebox struct {
@@ -63,13 +63,13 @@ func generateX(elem string, align MyAlign, grow int) string {
 
 	sep := strings.Repeat(" ", leftRightMargin)
 
-	if align == alignLeft {
+	if align == AlignLeft {
 		return sep + elem + strings.Repeat(" ", grow) + sep
 
-	} else if align == alignRight {
+	} else if align == AlignRight {
 		return sep + strings.Repeat(" ", grow) + elem + sep
 
-	} else if align == alignCenter {
+	} else if align == AlignCenter {
 		a := grow / 2
 		b := grow / 2
 		if grow%2 != 0 {
@@ -100,7 +100,7 @@ func NewEColumn(titles []string, align MyAlign) EColumn {
 		eboxes = append(eboxes, newEbox(title, align, width, true))
 	}
 
-	return EColumn{eboxes, aligh, width}
+	return EColumn{eboxes, align, width}
 }
 
 func Hello(name string) {
