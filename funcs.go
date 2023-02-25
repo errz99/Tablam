@@ -1,4 +1,4 @@
-package tablam
+package Tablam
 
 import "strings"
 
