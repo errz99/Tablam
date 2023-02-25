@@ -1,8 +1,7 @@
 package tablam
 
 import (
-	"fmt"
-	"strings"
+	// "fmt"
 	"unicode/utf8"
 
 	"github.com/gotk3/gotk3/gtk"
@@ -28,7 +27,11 @@ const (
 	AlignRight
 )
 
-type Ebox struct {
+var data [][]string
+var aligns []MyAlign
+
+// TBox represents an element
+type TBox struct {
 	title    string
 	titlex   string
 	eventBox *gtk.EventBox
@@ -36,19 +39,25 @@ type Ebox struct {
 	inUse    bool
 }
 
-func newEbox(title string, align MyAlign, width int, inUse bool) Ebox {
-	grow := width - utf8.RuneCountInString(title)
-	titlex := generateX(title, align, grow)
+func newTBox(width int) TBox {
+	titlex := generateX("", AlignLeft, width)
 
 	label, _ := gtk.LabelNew(titlex)
 	label.SetMarkup(dataMarkup[0] + titlex + dataMarkup[1])
 	ebox, _ := gtk.EventBoxNew()
 	ebox.Add(label)
 
-	return Ebox{title, titlex, ebox, label, inUse}
+	return TBox{"", titlex, ebox, label, true}
 }
 
-func (e *Ebox) Update(title string, width int, align MyAlign, inUse bool) {
+func (b *TBox) Fill(title string, align MyAlign, width int, inUse bool) {
+	grow := width - utf8.RuneCountInString(title)
+	b.title = title
+	b.titlex = generateX(title, align, grow)
+	b.label.SetMarkup(dataMarkup[0] + b.titlex + dataMarkup[1])
+}
+
+func (e *TBox) update(title string, width int, align MyAlign, inUse bool) {
 	e.title = title
 	grow := width - utf8.RuneCountInString(e.title)
 	e.titlex = generateX(e.title, align, grow)
@@ -56,53 +65,90 @@ func (e *Ebox) Update(title string, width int, align MyAlign, inUse bool) {
 	e.inUse = inUse
 }
 
-func generateX(elem string, align MyAlign, grow int) string {
-	if grow < 0 {
-		grow = 0
-	}
-
-	sep := strings.Repeat(" ", leftRightMargin)
-
-	if align == AlignLeft {
-		return sep + elem + strings.Repeat(" ", grow) + sep
-
-	} else if align == AlignRight {
-		return sep + strings.Repeat(" ", grow) + elem + sep
-
-	} else if align == AlignCenter {
-		a := grow / 2
-		b := grow / 2
-		if grow%2 != 0 {
-			b++
-		}
-		return sep + strings.Repeat(" ", a) + elem + strings.Repeat(" ", b) + sep
-	} else {
-		return sep + elem + strings.Repeat(" ", grow) + sep
-	}
+// TColumn holds a vertical column of elements
+type TColumn struct {
+	tboxes []TBox
+	align  MyAlign
+	width  int
 }
 
-type EColumn struct {
-	Eboxes []Ebox
-	Align  MyAlign
-	Width  int
+func NewTColumn(rows, width int) TColumn {
+	var tboxes []TBox
+	for i := 0; i < rows; i++ {
+		tboxes = append(tboxes, newTBox(width))
+	}
+	return TColumn{tboxes, AlignLeft, width}
 }
 
-func NewEColumn(titles []string, Align MyAlign) EColumn {
-	var Width int
-	for _, title := range titles {
-		if utf8.RuneCountInString(title) > Width {
-			Width = utf8.RuneCountInString(title)
+func (c *TColumn) FillWithText(n, rows int, align MyAlign) {
+	var width int
+
+	for i := 0; i < len(data); i++ {
+		if utf8.RuneCountInString(data[i][n]) > width {
+			width = utf8.RuneCountInString(data[i][n])
 		}
 	}
-
-	var Eboxes []Ebox
-	for _, title := range titles {
-		Eboxes = append(Eboxes, newEbox(title, Align, Width, true))
+	for i := 0; i < rows; i++ {
+		c.tboxes[i].Fill(data[i][n], align, width, true)
 	}
 
-	return EColumn{Eboxes, Align, Width}
+	c.align = align
+	c.width = width
 }
 
-func Hello(name string) {
-	fmt.Println("Hello", name, "from Tablam")
+func (c *TColumn) CompleteWithWhite(n int) {
+	for i := n; i < len(c.tboxes); i++ {
+		c.tboxes[i].Fill("", c.align, c.width, false)
+	}
+}
+
+// Tablam is a gtk grid with an array of TColumn
+type Tablam struct {
+	*gtk.Grid
+	ecols []TColumn
+}
+
+func NewTablam(rows, cols, width int) Tablam {
+	grid, _ := gtk.GridNew()
+	grid.SetRowSpacing(2)
+	grid.SetColumnSpacing(2)
+
+	var ecols []TColumn
+
+	for i := 0; i < cols; i++ {
+		ecol := NewTColumn(rows, width)
+		ecols = append(ecols, ecol)
+	}
+
+	for i, ecol := range ecols {
+		for j, tbox := range ecol.tboxes {
+			grid.Attach(tbox.eventBox, i, j, 1, 1)
+		}
+	}
+
+	return Tablam{grid, ecols}
+}
+
+func (t *Tablam) FillWithData(d [][]string, aligns []MyAlign) {
+	if len(d) == 0 || len(t.ecols) == 0 {
+		return
+	}
+	data = d
+
+	rows := len(data)
+	cols := len(data[0])
+
+	if cols > len(t.ecols) {
+		cols = len(t.ecols)
+	}
+	if rows > len(t.ecols[0].tboxes) {
+		rows = len(t.ecols[0].tboxes)
+	}
+
+	for i := 0; i < cols; i++ {
+		t.ecols[i].FillWithText(i, rows, aligns[i])
+	}
+	for i := 0; i < len(t.ecols); i++ {
+		t.ecols[i].CompleteWithWhite(rows)
+	}
 }
