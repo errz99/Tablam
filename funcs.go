@@ -1,28 +1,60 @@
 package Tablam
 
-import "strings"
+import (
+	"sort"
+	"strconv"
+	"strings"
+)
 
-func generateX(elem string, align MyAlign, grow int) string {
+func generateX(elem *string, align MyAlign, grow int) string {
 	if grow < 0 {
 		grow = 0
 	}
 
-	sep := strings.Repeat(" ", leftRightMargin)
+	if elem == nil {
+		return ""
+	}
 
-	if align == AlignLeft {
-		return sep + elem + strings.Repeat(" ", grow) + sep
+	sep := strings.Repeat(" ", LeftRightMargin)
 
-	} else if align == AlignRight {
-		return sep + strings.Repeat(" ", grow) + elem + sep
-
-	} else if align == AlignCenter {
+	switch align {
+	case AlignLeft:
+		return sep + *elem + strings.Repeat(" ", grow) + sep
+	case AlignRight:
+		return sep + strings.Repeat(" ", grow) + *elem + sep
+	case AlignCenter:
 		a := grow / 2
 		b := grow / 2
 		if grow%2 != 0 {
 			b++
 		}
-		return sep + strings.Repeat(" ", a) + elem + strings.Repeat(" ", b) + sep
+		return sep + strings.Repeat(" ", a) + *elem + strings.Repeat(" ", b) + sep
+	default:
+		return sep + *elem + strings.Repeat(" ", grow) + sep
+	}
+}
+
+func sortData() {
+	n := SortingColumn
+	if ReverseSorting {
+		sort.SliceStable(gData.drows, func(i, j int) bool {
+			return gData.drows[j].titles[n] < gData.drows[i].titles[n]
+		})
+		ReverseSorting = false
 	} else {
-		return sep + elem + strings.Repeat(" ", grow) + sep
+		sort.SliceStable(gData.drows, func(i, j int) bool {
+			return gData.drows[i].titles[n] < gData.drows[j].titles[n]
+		})
+		ReverseSorting = true
+	}
+
+	if IndexColumn >= 0 {
+		indexData()
+	}
+}
+
+func indexData() {
+	for i := range gData.drows {
+		gData.drows[i].titles[IndexColumn] = strconv.Itoa(i + 1)
 	}
 }

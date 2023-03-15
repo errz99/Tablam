@@ -1,23 +1,28 @@
 package Tablam
 
 import (
-	// "fmt"
+	"fmt"
+	"strconv"
 	"unicode/utf8"
 
+	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
 )
 
-const dma string = "<span background=\"white\"><tt>"
-const dmb string = "</tt></span>"
-const cma string = "<span foreground=\"white\" background=\"#6666dd\"><tt>"
-const cmb string = "</tt></span>"
+var RowSep uint = 1
+var ColumnSep uint = 1
+var LeftRightMargin = 1
 
-var dataMarkup = [2]string{dma, dmb}
-var cursorMarkup = [2]string{cma, cmb}
+var identMaker = 1000
+var oldPosition = -1
+var Position = -1
+var VerticalOffset = 0
 
-var rowSep uint = 4
-var columnSep uint = 4
-var leftRightMargin = 1
+var IndexColumn = -1
+var SortingColumn = -1
+var ReverseSorting bool
+var PageMode = false
+var ActiveHeaderCell = 0
 
 type MyAlign uint8
 
@@ -25,130 +30,261 @@ const (
 	AlignLeft MyAlign = iota + 1
 	AlignCenter
 	AlignRight
+	AlignNone
 )
 
-var data [][]string
-var aligns []MyAlign
+var gTheme Theme
 
-// TBox represents an element
-type TBox struct {
-	title    string
-	titlex   string
-	eventBox *gtk.EventBox
-	label    *gtk.Label
-	inUse    bool
+type DRow struct {
+	index   int
+	ident   int
+	titles  []string
+	xtitles []string
 }
 
-func newTBox(width int) TBox {
-	titlex := generateX("", AlignLeft, width)
+func newDRow(index int, titles []string, widths []int, aligns []MyAlign) DRow {
+	ident := identMaker
+	identMaker++
+	var xtitles []string
 
-	label, _ := gtk.LabelNew(titlex)
-	label.SetMarkup(dataMarkup[0] + titlex + dataMarkup[1])
+	for i, title := range titles {
+		grow := widths[i] - utf8.RuneCountInString(title)
+		xtitle := generateX(&title, aligns[i], grow)
+		xtitles = append(xtitles, xtitle)
+	}
+
+	return DRow{
+		index,
+		ident,
+		titles,
+		xtitles,
+	}
+}
+
+func (d *DRow) recalcXtitle(title *string, c, width int, align MyAlign) {
+	grow := width - utf8.RuneCountInString(*title)
+	d.xtitles[c] = generateX(title, align, grow)
+	d.titles[c] = *title
+}
+
+// TData holds the original data
+type TData struct {
+	drows   []DRow
+	aligns  []MyAlign
+	widths  []int
+	empties []string
+}
+
+func newTData(cols, width int) TData {
+	var widths []int
+	for i := 0; i < cols; i++ {
+		widths = append(widths, width)
+	}
+	return TData{
+		drows:   nil,
+		aligns:  make([]MyAlign, cols),
+		widths:  widths,
+		empties: make([]string, cols),
+	}
+}
+
+func (d *TData) setAligns(aligns []MyAlign) {
+	for i := range aligns {
+		d.aligns[i] = aligns[i]
+	}
+}
+
+func (d *TData) setWidths(widths []int) {
+	for i := range widths {
+		d.widths[i] = widths[i]
+	}
+}
+
+func (d *TData) setDrows(data [][]string) {
+	for i, drow := range d.drows {
+		drow.titles = data[i]
+	}
+}
+
+func (d *TData) setEmpties() {
+	empty := ""
+	for c, width := range d.widths {
+		d.empties[c] = generateX(&empty, AlignNone, width)
+	}
+}
+
+func (d *TData) createDataRows(data [][]string) {
+	d.drows = []DRow{}
+	for i, titles := range data {
+		drow := newDRow(i, titles, d.widths, d.aligns)
+		d.drows = append(d.drows, drow)
+	}
+}
+
+func (d *TData) recalcEmpty(c int) {
+	empty := ""
+	d.empties[c] = generateX(&empty, AlignNone, d.widths[c])
+}
+
+func (d *TData) recalcColumnWidth(c int, header *THeader) bool {
+	old := d.widths[c]
+	new := 0
+	changed := false
+	if header != nil {
+		new = header.widths[c]
+	}
+	for _, row := range d.drows {
+		if utf8.RuneCountInString(row.titles[c]) > new {
+			new = utf8.RuneCountInString(row.titles[c])
+		}
+	}
+	if new != old {
+		d.widths[c] = new
+		changed = true
+		d.recalcEmpty(c)
+	}
+	return changed
+}
+
+func (d *TData) recalcColumnXtitles(c int) {
+	for r, row := range d.drows {
+		grow := d.widths[c] - utf8.RuneCountInString(row.titles[c])
+		d.drows[r].xtitles[c] = generateX(&row.titles[c], d.aligns[c], grow)
+	}
+
+	// for _, row := range d.drows {
+	// 	row.tboxes[c].updateWidth(gData.widths[c], gData.aligns[c])
+	// }
+}
+
+func (d *TData) recalcXtitles() {
+	for r, row := range d.drows {
+		for c := range row.titles {
+			grow := d.widths[c] - utf8.RuneCountInString(row.titles[c])
+			d.drows[r].xtitles[c] = generateX(&row.titles[c], d.aligns[c], grow)
+		}
+	}
+}
+
+func (d *TData) recalcXtitle(r, c int, title *string) {
+	d.drows[r].recalcXtitle(title, c, d.widths[c], d.aligns[c])
+}
+
+var gData TData
+
+// TBox represents a cell
+type TBox struct {
+	*gtk.EventBox
+	label *gtk.Label
+}
+
+func newTBox(xtitle *string) *TBox {
+	label, _ := gtk.LabelNew(*xtitle)
+	gTheme.normalMarkup(label, xtitle)
 	ebox, _ := gtk.EventBoxNew()
+	ebox.SetMarginEnd(int(ColumnSep))
+	// ebox.SetVisibleWindow(true)
+	// ebox.SetAboveChild(true)
 	ebox.Add(label)
 
-	return TBox{"", titlex, ebox, label, true}
+	ebox.Connect("enter-notify-event", func() {
+		// fmt.Println("enter notify")
+	})
+	ebox.Connect("leave-notify-event", func() {
+		// fmt.Println("leave notify")
+	})
+
+	return &TBox{ebox, label}
 }
 
-func (b *TBox) Fill(title string, align MyAlign, width int, inUse bool) {
-	grow := width - utf8.RuneCountInString(title)
-	b.title = title
-	b.titlex = generateX(title, align, grow)
-	b.label.SetMarkup(dataMarkup[0] + b.titlex + dataMarkup[1])
-}
-
-func (e *TBox) update(title string, width int, align MyAlign, inUse bool) {
-	e.title = title
-	grow := width - utf8.RuneCountInString(e.title)
-	e.titlex = generateX(e.title, align, grow)
-	e.label.SetMarkup(dataMarkup[0] + e.titlex + dataMarkup[1])
-	e.inUse = inUse
-}
-
-// TColumn holds a vertical column of elements
-type TColumn struct {
-	tboxes []TBox
-	align  MyAlign
-	width  int
-}
-
-func NewTColumn(rows, width int) TColumn {
-	var tboxes []TBox
-	for i := 0; i < rows; i++ {
-		tboxes = append(tboxes, newTBox(width))
-	}
-	return TColumn{tboxes, AlignLeft, width}
-}
-
-func (c *TColumn) FillWithText(n, rows int, align MyAlign) {
-	var width int
-
-	for i := 0; i < len(data); i++ {
-		if utf8.RuneCountInString(data[i][n]) > width {
-			width = utf8.RuneCountInString(data[i][n])
+func (b *TBox) refreshMarkup(r, c int) {
+	if Position < len(gData.drows) {
+		if r == Position {
+			gTheme.cursorMarkup(b.label, &gData.drows[r].xtitles[c])
+		} else {
+			gTheme.normalMarkup(b.label, &gData.drows[r].xtitles[c])
 		}
 	}
-	for i := 0; i < rows; i++ {
-		c.tboxes[i].Fill(data[i][n], align, width, true)
-	}
-
-	c.align = align
-	c.width = width
 }
 
-func (c *TColumn) CompleteWithWhite(n int) {
-	for i := n; i < len(c.tboxes); i++ {
-		c.tboxes[i].Fill("", c.align, c.width, false)
+func (b *TBox) remove() {
+	b.label.Destroy()
+	b.Destroy()
+}
+
+// TRow holds an horizontal row of elements
+type TRow struct {
+	*gtk.Box
+	tboxes []*TBox
+}
+
+func newTRow(titles []string, n int) *TRow {
+	var tboxes []*TBox
+	hbox, _ := gtk.BoxNew(gtk.ORIENTATION_HORIZONTAL, 0)
+	hbox.SetName(strconv.Itoa(n))
+	hbox.AddEvents(int(gdk.SCROLL_MASK))
+
+	for i := range gData.widths {
+		var new *TBox
+		if titles == nil {
+			new = newTBox(&gData.empties[i])
+		} else {
+			new = newTBox(&gData.drows[i].xtitles[i])
+
+		}
+		hbox.Add(new)
+		tboxes = append(tboxes, new)
+	}
+
+	hbox.Connect("button_press_event", func(_ *gtk.Box, event *gdk.Event) {
+		name, _ := hbox.GetName()
+		oldPosition = Position
+		Position, _ = strconv.Atoi(name)
+	})
+
+	hbox.Connect("scroll_event", func(_ *gtk.Box, event *gdk.Event) {
+		fmt.Println("hbox scroll event")
+	})
+
+	return &TRow{hbox, tboxes}
+}
+
+func (r *TRow) fillWithEmpties() {
+	for c, tbox := range r.tboxes {
+		// tbox.label.updateTitle(gData.empties[i])
+		gTheme.normalMarkup(tbox.label, &gData.empties[c])
 	}
 }
 
-// Tablam is a gtk grid with an array of TColumn
-type Tablam struct {
-	*gtk.Grid
-	ecols []TColumn
+func (r *TRow) remove() {
+	for _, tbox := range r.tboxes {
+		tbox.remove()
+	}
+	r.Destroy()
 }
 
-func NewTablam(rows, cols, width int) Tablam {
-	grid, _ := gtk.GridNew()
-	grid.SetRowSpacing(2)
-	grid.SetColumnSpacing(2)
-
-	var ecols []TColumn
-
-	for i := 0; i < cols; i++ {
-		ecol := NewTColumn(rows, width)
-		ecols = append(ecols, ecol)
-	}
-
-	for i, ecol := range ecols {
-		for j, tbox := range ecol.tboxes {
-			grid.Attach(tbox.eventBox, i, j, 1, 1)
+func (r *TRow) refreshCursorMarkup(row int) {
+	vo := VerticalOffset
+	if row >= 0 && row < len(gData.drows)-vo {
+		for col, tbox := range r.tboxes {
+			gTheme.cursorMarkup(tbox.label, &gData.drows[row+vo].xtitles[col])
+		}
+	} else {
+		for col, tbox := range r.tboxes {
+			gTheme.cursorMarkup(tbox.label, &gData.empties[col])
 		}
 	}
-
-	return Tablam{grid, ecols}
 }
 
-func (t *Tablam) FillWithData(d [][]string, aligns []MyAlign) {
-	if len(d) == 0 || len(t.ecols) == 0 {
-		return
-	}
-	data = d
-
-	rows := len(data)
-	cols := len(data[0])
-
-	if cols > len(t.ecols) {
-		cols = len(t.ecols)
-	}
-	if rows > len(t.ecols[0].tboxes) {
-		rows = len(t.ecols[0].tboxes)
-	}
-
-	for i := 0; i < cols; i++ {
-		t.ecols[i].FillWithText(i, rows, aligns[i])
-	}
-	for i := 0; i < len(t.ecols); i++ {
-		t.ecols[i].CompleteWithWhite(rows)
+func (r *TRow) refreshNormalMarkup(row int) {
+	vo := VerticalOffset
+	if row >= 0 && row < len(gData.drows)-vo {
+		for col, tbox := range r.tboxes {
+			gTheme.normalMarkup(tbox.label, &gData.drows[row+vo].xtitles[col])
+		}
+	} else {
+		for col, tbox := range r.tboxes {
+			gTheme.normalMarkup(tbox.label, &gData.empties[col])
+		}
 	}
 }
