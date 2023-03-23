@@ -375,7 +375,7 @@ func (t *Tablam) RemoveARow(r int) {
 
 		if len(gData.drows) == 0 {
 			Position = -1
-		} else {
+		} else if Position == len(gData.drows) {
 			Position--
 			t.drawCursor()
 		}
