@@ -7,16 +7,13 @@ import (
 	"log"
 	"os"
 
+	tb "github.com/errz99/Tablam"
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
-	tb "github.com/errz99/Tablam"
 )
 
 var (
-	// ModifierShift   = uint(gdk.SHIFT_MASK)
-	// ModifierAlt     = uint(gdk.MOD1_MASK)
-	// ModifierControl = uint(gdk.CONTROL_MASK)
 	ModifierShift   bool
 	ModifierAlt     bool
 	ModifierControl bool

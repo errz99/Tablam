@@ -16,7 +16,7 @@ const normalColor = "#282828"
 const normalBackground = "#ffffff"
 const cursorColor = "#ffffff"
 const cursorBackground = "#6666dd"
-const selectColor = "#0000ff"
+const selectColor = "#282828"
 const selectBackground = "#d8d8d8"
 
 type ThStyle struct {

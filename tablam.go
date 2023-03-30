@@ -241,8 +241,7 @@ func newTRow(titles []string, n int) *TRow {
 
 	hbox.Connect("button_press_event", func(_ *gtk.Box, event *gdk.Event) {
 		name, _ := hbox.GetName()
-		oldPosition = Position
-		Position, _ = strconv.Atoi(name)
+		selectedRow, _ = strconv.Atoi(name)
 	})
 
 	hbox.Connect("scroll_event", func(_ *gtk.Box, event *gdk.Event) {

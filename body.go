@@ -153,6 +153,9 @@ func (t *Tablam) RemoveCursor() {
 }
 
 func (t *Tablam) UpdateCursor() {
+	oldPosition = Position
+	Position = selectedRow
+
 	if oldPosition >= 0 && oldPosition != Position {
 		op := oldPosition
 		t.erows[op].refreshNormalMarkup(op)
@@ -170,6 +173,47 @@ func (t *Tablam) clearCursor() {
 		t.erows[r].refreshNormalMarkup(r)
 	}
 }
+
+func (t *Tablam) clearSelect() {
+	if Position >= 0 {
+		r := Position
+		t.erows[r].refreshNormalMarkup(r)
+	}
+}
+
+func (t *Tablam) drawCursor() {
+	if Position >= 0 {
+		r := Position
+		t.erows[r].refreshCursorMarkup(r)
+	}
+}
+
+func (t Tablam) ActiveRowData() []string {
+	vo := VerticalOffset
+	if Position >= 0 && Position < len(gData.drows)-vo {
+		return gData.drows[Position+vo].titles
+	}
+	return nil
+}
+
+// func (t Tablam) selectRow() int {
+// 	vo := VerticalOffset
+// 	if Position >= 0 && Position < len(gData.drows)-vo {
+// 		alreadySel := false
+// 		for i, sel := range Selection {
+// 			if sel == Position {
+// 				alreadySel = true
+// 				Selection = append(Selection[:i], Selection[i+1:]...)
+// 				break
+// 			}
+// 		}
+// 		if !alreadySel {
+// 			Selection = append(Selection, Position)
+// 		}
+// 		return Position
+// 	}
+// 	return -1
+// }
 
 func (t Tablam) selectRow(row int) int {
 	vo := VerticalOffset
@@ -212,19 +256,16 @@ func (t Tablam) SelectARow() {
 	}
 }
 
-func (t *Tablam) drawCursor() {
-	if Position >= 0 {
-		r := Position
-		t.erows[r].refreshCursorMarkup(r)
-	}
-}
-
-func (t Tablam) ActiveRowData() []string {
+func (t Tablam) ClearSelected() {
 	vo := VerticalOffset
-	if Position >= 0 && Position < len(gData.drows)-vo {
-		return gData.drows[Position+vo].titles
+	for _, sel := range Selection {
+		if sel != Position {
+			for col, tbox := range t.erows[sel].tboxes {
+				gTheme.normalMarkup(tbox.label, &gData.drows[sel+vo].xtitles[col])
+			}
+		}
 	}
-	return nil
+	Selection = []int{}
 }
 
 func (t Tablam) FontSize() int {
