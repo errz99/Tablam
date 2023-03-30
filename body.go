@@ -152,9 +152,11 @@ func (t *Tablam) RemoveCursor() {
 	Position = -1
 }
 
-func (t *Tablam) UpdateCursor() {
-	oldPosition = Position
-	Position = selectedRow
+func (t *Tablam) UpdateCursor(withSel bool) {
+	if withSel {
+		oldPosition = Position
+		Position = selectedRow
+	}
 
 	if oldPosition >= 0 && oldPosition != Position {
 		op := oldPosition
@@ -195,25 +197,6 @@ func (t Tablam) ActiveRowData() []string {
 	}
 	return nil
 }
-
-// func (t Tablam) selectRow() int {
-// 	vo := VerticalOffset
-// 	if Position >= 0 && Position < len(gData.drows)-vo {
-// 		alreadySel := false
-// 		for i, sel := range Selection {
-// 			if sel == Position {
-// 				alreadySel = true
-// 				Selection = append(Selection[:i], Selection[i+1:]...)
-// 				break
-// 			}
-// 		}
-// 		if !alreadySel {
-// 			Selection = append(Selection, Position)
-// 		}
-// 		return Position
-// 	}
-// 	return -1
-// }
 
 func (t Tablam) selectRow(row int) int {
 	vo := VerticalOffset

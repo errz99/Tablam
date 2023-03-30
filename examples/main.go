@@ -134,7 +134,7 @@ func mainWindow(app *gtk.Application) {
 		if ModifierControl {
 			mytab.SelectARow()
 		} else {
-			mytab.UpdateCursor()
+			mytab.UpdateCursor(true)
 		}
 	})
 
