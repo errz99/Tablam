@@ -1,4 +1,4 @@
-package Tablam
+package tablam
 
 import (
 	"errors"
@@ -153,6 +153,9 @@ func (t *Tablam) RemoveCursor() {
 }
 
 func (t *Tablam) UpdateCursor() {
+	oldPosition = Position
+	Position = selectedRow
+
 	if oldPosition >= 0 && oldPosition != Position {
 		op := oldPosition
 		t.erows[op].refreshNormalMarkup(op)
@@ -165,6 +168,13 @@ func (t *Tablam) UpdateCursor() {
 }
 
 func (t *Tablam) clearCursor() {
+	if Position >= 0 {
+		r := Position
+		t.erows[r].refreshNormalMarkup(r)
+	}
+}
+
+func (t *Tablam) clearSelect() {
 	if Position >= 0 {
 		r := Position
 		t.erows[r].refreshNormalMarkup(r)
@@ -184,6 +194,78 @@ func (t Tablam) ActiveRowData() []string {
 		return gData.drows[Position+vo].titles
 	}
 	return nil
+}
+
+// func (t Tablam) selectRow() int {
+// 	vo := VerticalOffset
+// 	if Position >= 0 && Position < len(gData.drows)-vo {
+// 		alreadySel := false
+// 		for i, sel := range Selection {
+// 			if sel == Position {
+// 				alreadySel = true
+// 				Selection = append(Selection[:i], Selection[i+1:]...)
+// 				break
+// 			}
+// 		}
+// 		if !alreadySel {
+// 			Selection = append(Selection, Position)
+// 		}
+// 		return Position
+// 	}
+// 	return -1
+// }
+
+func (t Tablam) selectRow(row int) int {
+	vo := VerticalOffset
+	if row >= 0 && row < len(gData.drows)-vo {
+		alreadySel := false
+		for i, sel := range Selection {
+			if sel == row {
+				alreadySel = true
+				Selection = append(Selection[:i], Selection[i+1:]...)
+				break
+			}
+		}
+		if !alreadySel {
+			Selection = append(Selection, row)
+			return row
+		}
+	}
+	return -1
+}
+
+func (t Tablam) SelectCursorRow() int {
+	return t.selectRow(Position)
+}
+
+func (t Tablam) SelectARow() {
+	vo := VerticalOffset
+	row := selectedRow
+	if t.selectRow(row) < 0 {
+		if row != Position {
+			for col, tbox := range t.erows[row].tboxes {
+				gTheme.normalMarkup(tbox.label, &gData.drows[row+vo].xtitles[col])
+			}
+		}
+	} else {
+		if row != Position {
+			for col, tbox := range t.erows[row].tboxes {
+				gTheme.selectMarkup(tbox.label, &gData.drows[row+vo].xtitles[col])
+			}
+		}
+	}
+}
+
+func (t Tablam) ClearSelected() {
+	vo := VerticalOffset
+	for _, sel := range Selection {
+		if sel != Position {
+			for col, tbox := range t.erows[sel].tboxes {
+				gTheme.normalMarkup(tbox.label, &gData.drows[sel+vo].xtitles[col])
+			}
+		}
+	}
+	Selection = []int{}
 }
 
 func (t Tablam) FontSize() int {
