@@ -171,6 +171,47 @@ func (t *Tablam) clearCursor() {
 	}
 }
 
+func (t Tablam) selectRow(row int) int {
+	vo := VerticalOffset
+	if row >= 0 && row < len(gData.drows)-vo {
+		alreadySel := false
+		for i, sel := range Selection {
+			if sel == row {
+				alreadySel = true
+				Selection = append(Selection[:i], Selection[i+1:]...)
+				break
+			}
+		}
+		if !alreadySel {
+			Selection = append(Selection, row)
+			return row
+		}
+	}
+	return -1
+}
+
+func (t Tablam) SelectCursorRow() int {
+	return t.selectRow(Position)
+}
+
+func (t Tablam) SelectARow() {
+	vo := VerticalOffset
+	row := selectedRow
+	if t.selectRow(row) < 0 {
+		if row != Position {
+			for col, tbox := range t.erows[row].tboxes {
+				gTheme.normalMarkup(tbox.label, &gData.drows[row+vo].xtitles[col])
+			}
+		}
+	} else {
+		if row != Position {
+			for col, tbox := range t.erows[row].tboxes {
+				gTheme.selectMarkup(tbox.label, &gData.drows[row+vo].xtitles[col])
+			}
+		}
+	}
+}
+
 func (t *Tablam) drawCursor() {
 	if Position >= 0 {
 		r := Position

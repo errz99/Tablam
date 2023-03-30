@@ -24,6 +24,9 @@ var ReverseSorting bool
 var PageMode = false
 var ActiveHeaderCell = 0
 
+var Selection []int
+var selectedRow = -1
+
 type MyAlign uint8
 
 const (
@@ -279,6 +282,14 @@ func (r *TRow) refreshCursorMarkup(row int) {
 func (r *TRow) refreshNormalMarkup(row int) {
 	vo := VerticalOffset
 	if row >= 0 && row < len(gData.drows)-vo {
+		for _, sel := range Selection {
+			if sel == row {
+				for col, tbox := range r.tboxes {
+					gTheme.selectMarkup(tbox.label, &gData.drows[row+vo].xtitles[col])
+				}
+				return
+			}
+		}
 		for col, tbox := range r.tboxes {
 			gTheme.normalMarkup(tbox.label, &gData.drows[row+vo].xtitles[col])
 		}
