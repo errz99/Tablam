@@ -329,6 +329,11 @@ func (t *Tablam) SetNormalColors(fg, bg string) {
 	t.refreshData(0)
 }
 
+func (t Tablam) ResetPosition() {
+	oldPosition = -1
+	Position = -1
+}
+
 func (t *Tablam) refreshData(n int) {
 	// for r, erow := range t.erows {
 	for r := n; r < len(t.erows); r++ {
