@@ -69,9 +69,9 @@ func (ts *ThStyle) setFontBold(bold bool) {
 	}
 }
 
-func (ts ThStyle) colors() (string, string) {
-	return ts.color, ts.background
-}
+// func (ts ThStyle) colors() (string, string) {
+// 	return ts.color, ts.background
+// }
 
 func (ts *ThStyle) setColors(fg, bg string) {
 	if fg != "" {
@@ -118,18 +118,18 @@ func (t Theme) themeFontSize() int {
 	return t.fsize
 }
 
-func (t *Theme) setFontSize(size int) {
-	t.fsize = size
-	if size > 0 {
-		t.fontSize = " size='" + strconv.Itoa(size*fontSizeUnit) + "'"
-	} else {
-		t.fontSize = ""
-	}
-	t.hStyle.setChains(t.fontSize)
-	t.nStyle.setChains(t.fontSize)
-	t.cStyle.setChains(t.fontSize)
-	t.sStyle.setChains(t.fontSize)
-}
+// func (t *Theme) setFontSize(size int) {
+// 	t.fsize = size
+// 	if size > 0 {
+// 		t.fontSize = " size='" + strconv.Itoa(size*fontSizeUnit) + "'"
+// 	} else {
+// 		t.fontSize = ""
+// 	}
+// 	t.hStyle.setChains(t.fontSize)
+// 	t.nStyle.setChains(t.fontSize)
+// 	t.cStyle.setChains(t.fontSize)
+// 	t.sStyle.setChains(t.fontSize)
+// }
 
 func (t *Theme) incFontSize() {
 	t.fsize++
@@ -195,20 +195,20 @@ func (t *Theme) setFontBold(c byte, bold bool) {
 	}
 }
 
-func (t Theme) colors(c byte) (string, string) {
-	switch c {
-	case 'h':
-		return t.hStyle.colors()
-	case 'n':
-		return t.nStyle.colors()
-	case 'c':
-		return t.cStyle.colors()
-	case 's':
-		return t.sStyle.colors()
-	default:
-	}
-	return "", ""
-}
+// func (t Theme) colors(c byte) (string, string) {
+// 	switch c {
+// 	case 'h':
+// 		return t.hStyle.colors()
+// 	case 'n':
+// 		return t.nStyle.colors()
+// 	case 'c':
+// 		return t.cStyle.colors()
+// 	case 's':
+// 		return t.sStyle.colors()
+// 	default:
+// 	}
+// 	return "", ""
+// }
 
 func (t *Theme) setColors(c byte, fg, bg string) {
 	switch c {

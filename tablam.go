@@ -92,22 +92,18 @@ func newTData(cols, width int) TData {
 }
 
 func (d *TData) setAligns(aligns []MyAlign) {
-	for i := range aligns {
-		d.aligns[i] = aligns[i]
-	}
+	copy(d.aligns, aligns)
 }
 
-func (d *TData) setWidths(widths []int) {
-	for i := range widths {
-		d.widths[i] = widths[i]
-	}
-}
+// func (d *TData) setWidths(widths []int) {
+// 	copy(d.widths, widths)
+// }
 
-func (d *TData) setDrows(data [][]string) {
-	for i, drow := range d.drows {
-		drow.titles = data[i]
-	}
-}
+// func (d *TData) setDrows(data [][]string) {
+// 	for i, drow := range d.drows {
+// 		drow.titles = data[i]
+// 	}
+// }
 
 func (d *TData) setEmpties() {
 	empty := ""
@@ -251,12 +247,12 @@ func newTRow(titles []string, n int) *TRow {
 	return &TRow{hbox, tboxes}
 }
 
-func (r *TRow) fillWithEmpties() {
-	for c, tbox := range r.tboxes {
-		// tbox.label.updateTitle(gData.empties[i])
-		gTheme.normalMarkup(tbox.label, &gData.empties[c])
-	}
-}
+// func (r *TRow) fillWithEmpties() {
+// 	for c, tbox := range r.tboxes {
+// 		// tbox.label.updateTitle(gData.empties[i])
+// 		gTheme.normalMarkup(tbox.label, &gData.empties[c])
+// 	}
+// }
 
 func (r *TRow) remove() {
 	for _, tbox := range r.tboxes {

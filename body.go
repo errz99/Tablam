@@ -3,6 +3,7 @@ package Tablam
 import (
 	"errors"
 	// "fmt"
+	"log"
 	"unicode/utf8"
 
 	"github.com/gotk3/gotk3/gdk"
@@ -176,12 +177,12 @@ func (t *Tablam) clearCursor() {
 	}
 }
 
-func (t *Tablam) clearSelect() {
-	if Position >= 0 {
-		r := Position
-		t.erows[r].refreshNormalMarkup(r)
-	}
-}
+// func (t *Tablam) clearSelect() {
+// 	if Position >= 0 {
+// 		r := Position
+// 		t.erows[r].refreshNormalMarkup(r)
+// 	}
+// }
 
 func (t *Tablam) drawCursor() {
 	if Position >= 0 {
@@ -273,28 +274,19 @@ func (t *Tablam) IncFontSize() {
 }
 
 func (t Tablam) HeaderFontBold() bool {
-	if gTheme.fontBold('h') {
-		return true
-	}
-	return false
+	return gTheme.fontBold('h')
 }
+
 func (t Tablam) NormalFontBold() bool {
-	if gTheme.fontBold('n') {
-		return true
-	}
-	return false
+	return gTheme.fontBold('n')
 }
+
 func (t Tablam) CursorFontBold() bool {
-	if gTheme.fontBold('c') {
-		return true
-	}
-	return false
+	return gTheme.fontBold('c')
 }
+
 func (t Tablam) SelectFontBold() bool {
-	if gTheme.fontBold('s') {
-		return true
-	}
-	return false
+	return gTheme.fontBold('s')
 }
 
 func (t Tablam) SetHeaderFontBold(b bool) {
@@ -397,7 +389,9 @@ func (t *Tablam) refreshColumn(c int) {
 
 func (t *Tablam) UpdateRow(r int, data []string) {
 	for c, str := range data {
-		t.UpdateCell(r, c, str)
+		if err := t.UpdateCell(r, c, str); err != nil {
+			log.Println(err)
+		}
 	}
 }
 
