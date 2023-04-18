@@ -258,6 +258,12 @@ func mainWindow(app *gtk.Application) {
 			// mytab.SortData(1)
 			mytab.ShowOrHideColumn(1)
 
+		case gdk.KEY_T:
+			mytab.SetFont("")
+
+		case gdk.KEY_I:
+			mytab.SetFont("Iosevka Term")
+
 		default:
 		}
 	})

@@ -321,6 +321,14 @@ func (t *Tablam) SetNormalColors(fg, bg string) {
 	t.refreshData(0)
 }
 
+func (t *Tablam) SetFont(f string) {
+	gTheme.setFont(f)
+	if t.header != nil {
+		t.header.refreshMarkups()
+	}
+	t.refreshData(0)
+}
+
 func (t Tablam) ResetPosition() {
 	oldPosition = -1
 	Position = -1

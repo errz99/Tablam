@@ -19,6 +19,8 @@ const cursorBackground = "#6666dd"
 const selectColor = "#282828"
 const selectBackground = "#d8d8d8"
 
+var fontDesc = ""
+
 type ThStyle struct {
 	boldA      string
 	boldB      string
@@ -48,6 +50,11 @@ func newThStyle(fg, bg, size string, bold bool) ThStyle {
 
 	chainA := "<span" + size + background + color + "><tt>" + boldA
 	chainB := boldB + "</tt></span>"
+	if fontDesc != "" {
+		font := " font_desc='" + fontDesc + "'"
+		chainA = "<span" + font + size + background + color + ">" + boldA
+		chainB = boldB + "</span>"
+	}
 
 	return ThStyle{
 		boldA,
@@ -89,6 +96,11 @@ func (ts *ThStyle) setColors(fg, bg string) {
 func (ts *ThStyle) setChains(size string) {
 	ts.chainA = "<span" + size + ts.background + ts.color + "><tt>" + ts.boldA
 	ts.chainB = ts.boldB + "</tt></span>"
+	if fontDesc != "" {
+		font := " font_desc='" + fontDesc + "'"
+		ts.chainA = "<span" + font + size + ts.background + ts.color + ">" + ts.boldA
+		ts.chainB = ts.boldB + "</span>"
+	}
 }
 
 type Theme struct {
@@ -116,6 +128,14 @@ func newTheme() Theme {
 
 func (t Theme) themeFontSize() int {
 	return t.fsize
+}
+
+func (t *Theme) setFont(f string) {
+	fontDesc = f
+	t.hStyle.setChains(t.fontSize)
+	t.nStyle.setChains(t.fontSize)
+	t.cStyle.setChains(t.fontSize)
+	t.sStyle.setChains(t.fontSize)
 }
 
 // func (t *Theme) setFontSize(size int) {
